@@ -1,0 +1,40 @@
+#ifndef __BSP_TREE__
+#define __BSP_TREE__
+
+#include <iostream>
+#include <stdexcept>
+
+using namespace std;
+
+//Leaves have different structure that the one of internal nodes
+
+class BSP{
+
+	/*struct BSPLeaf{
+	
+	};*/
+
+	/*struct region{ //region of the space considering division
+
+	}*/
+
+	struct BSPInternalNode{ //internal node
+		region reg;
+		BSPNode* parent;
+		BSPNode* left;
+		BSPNode* right;
+		//Leaf* leaf;
+	};
+
+private:
+	BSPInternalNode *root;
+
+public:
+	BSP();
+	~BSP();
+	pair<BSPInternalNode*, BSPInternalNode*> generate_partition_nodes(); //Generate partition: returns two nodes leaves or internal ones
+	void insert_node();
+	void inorder_front2back();	//travel tree inorder front to back depending on the cameras viewer zone
+};
+
+#endif
