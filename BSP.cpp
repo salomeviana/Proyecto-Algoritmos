@@ -1,27 +1,12 @@
-pair <Interval,Interval> split_interval(Interval i1, Interval i2){
-	//TENER CUIDADO CON LOS PUNTOS QUE ESTAN EN LOS 2 INTERVALOS!!!
-	if (i1.min < i2.min && i2.min < i1.max && i1.max < i2.max){
-		Interval result1(i2.min, i1.max);
-		Interval result2(i1.max, i2.max);
-		return make_pair(result1, result2);
-	}
-	
-	//if (i2.min < i1.min && i1.min < i2.max && i2.max < i1.max)
-	else{
-		Interval result1(i2.min, i1.min);
-		Interval result2(i1.min, i2.max);
-		return make_pair(result1, result2);
-	}
-}
+#include "main_functions.cpp"
 
-Rectangle get_rectangle(BSPNode* t){
-	Interval x(t->reg.p_reference.x, t->reg.p_reference.x + t->reg.len_x);
-	Interval y(t->reg.p_reference.y, t->reg.p_reference.y + t->reg.len_y);
-	return Rectangle(x,y);
+BSP::BSP(){
+	root = nullptr; precision = 0.5;
 }
 
 BSP::BSP(Region region, vector<Point> points, float prec){
 	BSPNode* tree = new BSPNode;
+	tree->type = 0;
 	tree->parent = nullptr;
 	tree->left = nullptr;
 	tree->right = nullptr;
@@ -29,15 +14,16 @@ BSP::BSP(Region region, vector<Point> points, float prec){
 	precision = prec;
 	tree->p_list = points;
 	root = tree;
-	partition();
+	if (prec < 1){ //does partition if precision is less than 1
+		partition_4x(root);
+	}
 }
 
 void BSP::destroy_recursive(BSPNode* &t){
-	if (t != nullptr){
+	if (t != nullptr){ 
 		destroy_recursive(t->left);
 		destroy_recursive(t->right);
 		delete t;
-		cout << "holi" << endl;
 	}
 }
 
@@ -58,11 +44,13 @@ void BSP::partition_x(BSPNode* &t){
 	left->parent = t;
 	left->left = nullptr;
 	left->right = nullptr;
+	left->type = 1;
 
 	//Assigning right
 	right->parent= t;
 	right->left = nullptr;
 	right->right = nullptr;
+	right->type = 1;
 
 	//Defining left region
 	left->reg.p_reference = t->reg.p_reference;
@@ -80,57 +68,37 @@ void BSP::partition_x(BSPNode* &t){
 	vector<Point> left_points = get<0>(sons_points);
 	vector<Point> right_points = get<1>(sons_points);
 
-	for (unsigned i = 0; i<left_points.size(); i++){
-		left->p_list.push_back(left_points[i]);
-	}
+	left->p_list = left_points;
+	right->p_list = right_points;
 
-	for (unsigned i = 0; i<right_points.size(); i++){
-		right->p_list.push_back(right_points[i]);
-	}
+	t->right = right;
+	t->left = left;
 
-	if (left_points.empty() && right_points.empty()){
+	if (left_points.empty()){
 		t->left = nullptr;
-		t->right = nullptr;
-		delete left;
-		delete right;
-	}
-
-	else if (left_points.empty() && 1 - right_points.empty() == 1){
-		t->left = nullptr;
-		t->right = right;
 		delete left;
 	}
 
-	else if  (right_points.empty() && 1 - left_points.empty() == 1){
+	if (right_points.empty()){
 		t->right = nullptr;
-		t->left = left;
 		delete right;
 	}
-
-	else{
-		t->right = right;
-		t->left = left;
-	}
-
-	//t->right = right;
-	//t->left = left;
 }
 
-
-
 pair <vector<Point>, vector<Point>> BSP::def_points_x(BSPNode* &t){
-	vector<Point> parent_vec = t->p_list;
-	vector<Point> left_vec;
-	vector<Point> right_vec;
+	//only for x partition / t->type = 1
+	vector<Point> parent_vec = t->p_list; //parent's points
+	vector<Point> left_vec; //left son's points
+	vector<Point> right_vec; //right son's points
 
 	for (unsigned i = 0; i<parent_vec.size(); i++){
-		if (parent_vec[i].x <= t->reg.p_reference.x + t->reg.len_x/2){
+		if (parent_vec[i].x <= t->reg.p_reference.x + t->reg.len_x/2){//checks if should go left
 			left_vec.push_back(parent_vec[i]);
 		}
 		else{ right_vec.push_back(parent_vec[i]);}
 	}
 
-	return make_pair(left_vec, right_vec);
+	return make_pair(left_vec, right_vec); //returns points of left and points of right
 }
 
 
@@ -144,11 +112,13 @@ void BSP::partition_y(BSPNode* &t){
 	left->parent = t;
 	left->left = nullptr;
 	left->right = nullptr;
+	left->type = 2;
 
 	//Assigning right
 	right->parent= t;
 	right->left = nullptr;
 	right->right = nullptr;
+	right->type = 2;
 
 	//Defining left region
 	left->reg.p_reference = t->reg.p_reference;
@@ -166,55 +136,37 @@ void BSP::partition_y(BSPNode* &t){
 	vector<Point> left_points = get<0>(sons_points);
 	vector<Point> right_points = get<1>(sons_points);
 
-	for (unsigned i = 0; i<left_points.size(); i++){
-		left->p_list.push_back(left_points[i]);
-	}
-
-	for (unsigned i = 0; i<right_points.size(); i++){
-		right->p_list.push_back(right_points[i]);
-	}
+	left->p_list = left_points;
+	right->p_list = right_points;
 
 	t->right = right;
 	t->left = left;
 
-	if (left_points.empty() && right_points.empty()){
+	if (left_points.empty()){
 		t->left = nullptr;
-		t->right = nullptr;
-		delete left;
-		delete right;
-	}
-
-	else if (left_points.empty() && 1 - right_points.empty() == 1){
-		t->left = nullptr;
-		t->right = right;
 		delete left;
 	}
 
-	else if  (right_points.empty() && 1 - left_points.empty() == 1){
+	if (right_points.empty()){
 		t->right = nullptr;
-		t->left = left;
 		delete right;
-	}
-
-	else{
-		t->right = right;
-		t->left = left;
 	}
 }
 
 pair <vector<Point>, vector<Point>> BSP::def_points_y(BSPNode* &t){
-	vector<Point> parent_vec = t->p_list;
-	vector<Point> left_vec;
-	vector<Point> right_vec;
+	//only for y partition / t->type = 2
+	vector<Point> parent_vec = t->p_list; //parent's points
+	vector<Point> left_vec; //left son's points
+	vector<Point> right_vec; //right son's points
 
 	for (unsigned i = 0; i<parent_vec.size(); i++){
-		if (parent_vec[i].y <= t->reg.p_reference.y + t->reg.len_y/2){
+		if (parent_vec[i].y <= t->reg.p_reference.y + t->reg.len_y/2){ //checks if should go left 
 			left_vec.push_back(parent_vec[i]);
 		}
 		else{ right_vec.push_back(parent_vec[i]);}
 	}
 
-	return make_pair(left_vec, right_vec);
+	return make_pair(left_vec, right_vec); //returns points of left and points of right
 }
 
 float BSP::covered_length_x(BSPNode* &t){
@@ -229,72 +181,121 @@ float BSP::covered_length_y(BSPNode* &t){
 	return result;
 }
 
-void BSP::partition(){
+//PARTITIONING STARTING IN X
 
-	partition_x(root);
-	partition_helper(root);
+void BSP::partition_4x(BSPNode* &t){
+
+	partition_x(t);
+	partition_helper_4x(t);
 }
 
-void BSP::partition_helper(BSPNode* &t){
+void BSP::partition_helper_4x(BSPNode* &t){
 
-	if (t->left != nullptr){
-			partition_helper_left(t);
+	if (t->left != nullptr){ //checks left and does recursion
+		partition_helper_left_4x(t);
 		}
 
-	if (t->right != nullptr){
-			partition_helper_right(t);
+	if (t->right != nullptr){ //checks right and does recursion
+		partition_helper_right_4x(t);
 		}
 }
 
-
-void BSP::partition_helper_left(BSPNode* &t){
-	partition_y(t->left);
-	//check if 
-	if (t->left->left != nullptr){
-		if (covered_length_x(t->left->left) > precision && covered_length_y(t->left->left) > precision){
-			partition_x(t->left->left);
-			partition_helper(t->left->left);
-		}
-		else{
-			//cout << "not for t->left->left" << endl;
-		}
-	}
-	
-	if (t->left->right != nullptr){
-		if (covered_length_x(t->left->right) > precision && covered_length_y(t->left->right) > precision){
-			partition_x(t->left->right);
-			partition_helper(t->left->right);
-		}
-		else{
-			//cout << "not for t->left->right" << endl;
-		}	
-	}
-}
-
-void BSP::partition_helper_right(BSPNode* &t){
+void BSP::partition_helper_right_4x(BSPNode* &t){ //does recursion after spliting t->right
 	partition_y(t->right);
 
-	if (t->right->left != nullptr){
+	if (t->right->left != nullptr){ //recursion on the left
 		if (covered_length_x(t->right->left) > precision && covered_length_y(t->right->left) > precision){
 			partition_x(t->right->left);
-			partition_helper(t->right->left);
-		}
-		else{
-			//cout << "not for t->right->left" << endl;
+			partition_helper_4x(t->right->left);
 		}
 	}
 	
-	if (t->right->right != nullptr){
+	if (t->right->right != nullptr){ //recursion on the right
 		if (covered_length_x(t->right->right) > precision && covered_length_y(t->right->right) > precision){
 			partition_x(t->right->right);
-			partition_helper(t->right->right);
-		}
-		else{
-			//cout << "not for t->right->right" << endl;
+			partition_helper_4x(t->right->right);
 		}
 	}
 }
 
+
+void BSP::partition_helper_left_4x(BSPNode* &t){ //does recursion after spliting t->left
+	partition_y(t->left);
+
+	if (t->left->left != nullptr){ //recursion on the left
+		if (covered_length_x(t->left->left) > precision && covered_length_y(t->left->left) > precision){
+			partition_x(t->left->left);
+			partition_helper_4x(t->left->left);
+		}
+	}
+	
+	if (t->left->right != nullptr){ //recursion on the right
+		if (covered_length_x(t->left->right) > precision && covered_length_y(t->left->right) > precision){
+			partition_x(t->left->right);
+			partition_helper_4x(t->left->right);
+		}
+	}
+}
+
+
+
+//PARTITIONING STARTING IN Y
+
+void BSP::partition_4y(BSPNode* &t){
+
+	partition_y(t);
+	partition_helper_4y(t);
+}
+
+void BSP::partition_helper_4y(BSPNode* &t){
+
+	if (t->left != nullptr){ //checks left and does recursion
+			partition_helper_left_4y(t);
+		}
+
+	if (t->right != nullptr){ //checks right and does recursion
+			partition_helper_right_4y(t);
+		}
+}
+
+void BSP::partition_helper_left_4y(BSPNode* &t){ //does recursion after spliting t->right
+	partition_x(t->left);
+	
+	if (t->left->left != nullptr){ //recursion on the left
+		if (covered_length_x(t->left->left) > precision && covered_length_y(t->left->left) > precision){
+			partition_y(t->left->left);
+			partition_helper_4y(t->left->left);
+		}
+	}
+	
+	if (t->left->right != nullptr){ //recursion on the right
+		if (covered_length_x(t->left->right) > precision && covered_length_y(t->left->right) > precision){
+			partition_y(t->left->right);
+			partition_helper_4y(t->left->right);
+		}
+	}
+}
+
+void BSP::partition_helper_right_4y(BSPNode* &t){ //does recursion after spliting t->right
+	partition_x(t->right);
+
+	if (t->right->left != nullptr){ //recursion on the left
+		if (covered_length_x(t->right->left) > precision && covered_length_y(t->right->left) > precision){
+			partition_y(t->right->left);
+			partition_helper_4y(t->right->left);
+		}
+	}
+	
+	if (t->right->right != nullptr){ //recursion on the right
+		if (covered_length_x(t->right->right) > precision && covered_length_y(t->right->right) > precision){
+			partition_y(t->right->right);
+			partition_helper_4y(t->right->right);
+		}
+	}
+} 
+
+
+//INORDER TRAVERSAL DISPLAY
 void BSP::display_node(BSPNode *t, int count){
 	if (t != nullptr){
 		count ++;
@@ -348,6 +349,8 @@ int BSP::height() const{
 	return height(root);
 }
 
+//determines in which node's son the point is if its a type 1 node
+//does recursion with find_point_x
 BSPNode* BSP::find_point_x(BSPNode* t, Point &p){
 	if (t->left == nullptr && t->right == nullptr){
 		for (unsigned i = 0; i<t->p_list.size(); i++){
@@ -375,10 +378,10 @@ BSPNode* BSP::find_point_x(BSPNode* t, Point &p){
 			return nullptr;
 		}
 	}
-
-	//return nullptr;
 }
 
+//determines in which node's son the point is if its a type 2 node
+//does recursion with find_point_x
 BSPNode* BSP::find_point_y(BSPNode* t, Point &p){
 	if (t->left == nullptr && t->right == nullptr){
 		for (unsigned i = 0; i<t->p_list.size(); i++){
@@ -408,14 +411,17 @@ BSPNode* BSP::find_point_y(BSPNode* t, Point &p){
 	}
 }
 
+//finds point's node given a BSPNode 
 BSPNode* BSP::find_point(BSPNode* t, Point &p){
 	return find_point_x(t, p);
 }
 
+
+//finds point's region of the partition
 Rectangle BSP::find_point_region(Point &p){
 	BSPNode* result_node = find_point(root, p);
 
-	if (result_node != nullptr){
+	if (result_node != nullptr){ //if point in the tree, creates a Rectangle/Region to return 
 		Interval x(result_node->reg.p_reference.x, result_node->reg.p_reference.x + result_node->reg.len_x);
 		Interval y(result_node->reg.p_reference.y, result_node->reg.p_reference.y + result_node->reg.len_y);
 		Rectangle result(x,y);
@@ -436,58 +442,314 @@ bool BSP::left_son(BSPNode* &t){
 }
 
 bool BSP::right_son(BSPNode* &t){
-	return 1 - left_son(t);
+	return !left_son(t);
 }
+
 
 void BSP::remove_point(Point &p){
 	cout << "Removing " << p << endl;
+
 	BSPNode* p_node = find_point(root, p);
-	if (p_node != nullptr){
-		while (p_node != nullptr){
-			int idx;
+	if (p_node != nullptr){ //checks if the point is in the tree
+		while (p_node != nullptr){ //removes point from every list in the tree
+			int idx = -1;
 			for (unsigned i = 0; i<p_node->p_list.size(); i++){
 				if (p == p_node->p_list[i]){
-					idx = i;
+					idx = i; //gets index of Point to erase
 					break;
 				}
 			}
 
+			if (idx != -1)
+				p_node->p_list.erase(p_node->p_list.begin() + idx);	
 
-			p_node->p_list.erase(p_node->p_list.begin() + idx-1);
+			BSPNode* par = p_node->parent;
 
 			if (p_node->p_list.empty()){
 				if(left_son(p_node)){
 					p_node->parent->left = nullptr;
-					//delete p_node;
+					delete p_node;
 				}
 				else{
 					p_node->parent->right = nullptr;
-					//delete p_node;
+					delete p_node;
 				}
 			}
 
-			p_node = p_node->parent;
+			p_node = par;
 		}
 	}
 	else{
 		throw runtime_error("Attempting to remove unexisting Point\n");
 	}
+//}
+}
+
+vector<Point> BSP::scan_region(Interval x, Interval y, BSPNode* &t){
+	vector<Point> result;
+	Rectangle rec(x,y);
+	scan_region_helper(rec, t, result);
+	return result;
+}
+
+vector<Point> BSP::scan_region(Interval x, Interval y){
+	Rectangle rec(x,y);
+	vector<Point> pre_result = scan_region(x, y, root);
+	vector<Point> result;
+	//checks which ones are inside the region 
+	for (unsigned i = 0; i<pre_result.size(); i++){
+		if (inside_rectangle(rec, pre_result[i])){
+			result.push_back(pre_result[i]);
+		}
+	}
+	return result;
+}
+
+void BSP::scan_region_helper(Rectangle rec_reference, BSPNode* &t, vector<Point> &result){
+	Rectangle t_rec = get_rectangle(t);
+	float error = 0.000001;
+	rec_reference.x.min += error;
+	rec_reference.x.max -= error;
+	rec_reference.y.min += error;
+	rec_reference.y.max += error;
+
+	if (intersection(rec_reference, t_rec)){ //checks intersection between two Rectangles
+		if (t->left != nullptr){ 
+			Rectangle t_rec_left = get_rectangle(t->left);
+			if(intersection(t_rec_left, rec_reference)){ //recursion with t->left and reference
+				scan_region_helper(rec_reference, t->left, result);
+			}
+		}
+
+		if (t->right != nullptr){
+			Rectangle t_rec_right = get_rectangle(t->right);
+			if(intersection(t_rec_right, rec_reference)){ //recursion with t->right and reference
+				scan_region_helper(rec_reference, t->right, result);
+			}
+		}
+
+		if (t->right == nullptr && t->left == nullptr){ //the region itself is either the node region or is less than the node region
+			for (unsigned i = 0; i<t->p_list.size(); i++){ //pushes region points to result vector
+				result.push_back(t->p_list[i]);
+			}
+		}
+	}
+}
+
+void BSP::insert_point(Point &p){
+	cout << "Inserting " << p << endl;
+	if(root == nullptr){
+		BSPNode* new_root = new BSPNode;
+
+		new_root -> parent = nullptr;
+		new_root -> left = nullptr;
+		new_root -> right = nullptr;
+		new_root -> type = 0;
+
+		new_root->p_list = {p};
+
+		root = new_root;
+		partition_4x(root);
+	}
+
+	else{
+		BSPNode* p_node = find_point(root, p);
+		if (root->left == nullptr && root->right == nullptr){
+			root->p_list.push_back(p);
+			partition_4x(root);
+		}
+
+	
+		else if (p_node == nullptr){ //if point is not in the tree
+			root->p_list.push_back(p);
+			BSPNode* node = find_node_2insert(root, p); // node where to insert the point
+			if (node->left != nullptr && node->right == nullptr){ //creating node in the right to create partition for the point
+				BSPNode* new_node = new BSPNode;
+
+				new_node->reg.p_reference.x = node->reg.p_reference.x + node->reg.len_x/2;
+				new_node->reg.p_reference.y = node->reg.p_reference.y;
+				
+				if (node->type == 1){
+					new_node->reg.len_x = node->reg.len_x;
+					new_node->reg.len_y = node->reg.len_y/2;
+					new_node->type = 2;
+				}
+				else{
+					new_node->reg.len_x = node->reg.len_x/2;
+					new_node->reg.len_y = node->reg.len_y;
+					new_node->type = 1;
+				}
+				
+				node->right = new_node;
+				new_node->parent = node;
+
+				new_node->left = nullptr;
+				new_node->left = nullptr;
+
+				new_node->p_list.push_back(p);
+
+				if (covered_length_y(new_node) > precision){
+					partition_y(new_node);
+					if (node->type == 1 || node->type == 0){
+							
+							//if (new_node->left != nullptr){
+								if (covered_length_x(new_node->right) > precision && covered_length_y(new_node->right) > precision){
+									partition_4x(new_node);
+									partition_helper_4x(new_node);
+								}
+							//}
+
+							/*if (new_node->right != nullptr){
+								if (covered_length_x(new_node->right) > precision && covered_length_y(new_node->right) > precision){
+									partition_x(new_node->right);
+									partition_helper_4x(new_node->right);
+								}
+							}*/
+					}
+					else{
+						if (new_node->left != nullptr){
+							if (covered_length_x(new_node->left) > precision && covered_length_y(new_node->left) > precision){
+								partition_x(new_node->left);
+								partition_helper_4x(new_node->left);
+								}
+						}
+						
+						if (new_node->right != nullptr){
+							if (covered_length_x(new_node->right) > precision && covered_length_y(new_node->right) > precision){
+								partition_x(new_node->right);
+								partition_helper_4x(new_node->right);
+							}
+						}
+						
+					}
+				}
+			}
+			else if (node->left == nullptr && node->right != nullptr){ //creating node in the left to create partition for the point
+				BSPNode* new_node = new BSPNode;
+				new_node->reg.p_reference = node->reg.p_reference;
+				
+				if (node->type == 1){
+					new_node->reg.len_x = node->reg.len_x;
+					new_node->reg.len_y = node->reg.len_y/2;
+					new_node->type = 2;
+				}
+				else{
+					new_node->reg.len_x = node->reg.len_x/2;
+					new_node->reg.len_y = node->reg.len_y;
+					new_node->type = 1;
+				}
+				
+				
+				node->left = new_node;
+				new_node->parent = node;
+
+				new_node->left = nullptr;
+				new_node->right =nullptr;
+
+
+				new_node->p_list.push_back(p);
+
+
+				if (covered_length_y(new_node) > precision){
+						partition_y(new_node);
+						if (node->type == 1 || node->type == 0){
+
+							//if (new_node->left != nullptr){
+								if (covered_length_x(new_node->left) > precision && covered_length_y(new_node->left) > precision){
+									//checks if the precision has been achieved
+									partition_4x(new_node);
+									partition_helper_4x(new_node);
+								}
+							//}
+
+							/*if (new_node->right != nullptr){
+								if (covered_length_x(new_node->right) > precision && covered_length_y(new_node->right) > precision){
+									//checks if the precision has been achieved
+									partition_x(new_node->right);
+									partition_helper_4x(new_node->right);
+								}
+							}*/
+						}
+						else{
+							if (new_node->left != nullptr){
+								if (covered_length_x(new_node->left) > precision && covered_length_y(new_node->left) > precision){
+									//checks if the precision has been achieved
+									partition_x(new_node->left);
+									partition_helper_4x(new_node->left);
+								}
+							}
+
+							if (new_node->right != nullptr){
+								if (covered_length_x(new_node->right) > precision && covered_length_y(new_node->right) > precision){
+									//checks if the precision has been achieved
+									partition_x(new_node->right);
+									partition_helper_4x(new_node->right);
+								}
+							}
+					}
+				}
+			}
+		}
+		else{
+			throw runtime_error("Attempting to insert an existing Point\n");
+		}
+	}
+
 }
 
 
-
-/*vector<Point> scan_region(Interval x, Interval y, BSPNode* &t){
-	Rectangle t_rec = get_rectangle(t);
-	if ( t_rec.x.min > x.min && t_rec.x.max < x.max){
-		if (t_rec.y.min > y.min && t_rec.y.max < y.max){
-			return t->parent->p_list;
-		}
-		else if( t_rec.y.min < y.min && y.min < t_rec.max && t_rec.y.max < y.max){
-			pair <Interval, Interval> intervals = split_interval(Interval(t_rec.y.min, t_rec.y.max), y);
-			scan_region(x, get<0>(intervals), t->left);
-			scan_region(x, get<1>(intervals), t->right);
-		}
-
-		else 
+BSPNode* BSP::find_node_x_2insert(BSPNode* &t, Point &p){ //finds node in which to insert point if t is of type 1;
+	if (t->left == nullptr && t->right == nullptr){
+		return t;	
 	}
-}*/
+
+	else if (p.x <= t->reg.p_reference.x + t->reg.len_x/2){
+		if (t->left != nullptr){
+			t->left->p_list.push_back(p);
+			return find_node_y_2insert(t->left, p);
+		}
+		else{
+			return t;
+		}
+	}
+
+	else{
+		if (t->right != nullptr){
+			t->right->p_list.push_back(p);
+			return find_node_y_2insert(t->right, p);
+		}
+		else{
+			return t;
+		}
+	}
+}
+
+BSPNode* BSP::find_node_y_2insert(BSPNode* &t, Point &p){ //finds node in which to insert point if t is of type 1;
+	if (t->left == nullptr && t->right == nullptr){
+		return t;	
+	}
+
+	else if (p.y <= t->reg.p_reference.y + t->reg.len_y/2){
+		if (t->left != nullptr){
+			t->left->p_list.push_back(p);
+			return find_node_x_2insert(t->left, p);
+		}
+		else{
+			return t;
+		}
+	}
+
+	else{
+		if (t->right != nullptr){ 
+			t->right->p_list.push_back(p);
+			return find_node_x_2insert(t->right, p);
+		}
+		else{
+			return t;
+		}
+	}
+}
+
+BSPNode* BSP::find_node_2insert(BSPNode* &t, Point &p){ //finds node in which to insert point
+	return find_node_x_2insert(t,p);
+}
