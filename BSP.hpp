@@ -6,7 +6,6 @@
 #include <stdexcept>
 #include <limits>
 #include <random>
-#include <fstream>
 
 using namespace std;
 
@@ -33,7 +32,6 @@ struct Point{
 	
 };
 
-//cout overload to print Point structure
 ostream& operator<<(ostream& out, Point &p){
 	out << "(" << p.x << " , " << p.y << ")";
 	return out;
@@ -69,9 +67,10 @@ struct Interval{
 		min = mn;
 		max = mx;
 	}
+
+	//pair<Interval, Interval> split_interval(Interval i1, Interval i2);
 };
 
-//cout overload to print Interval structure
 ostream& operator<<(ostream& out, Interval &inter){
 	out << "[" << inter.min << " , " << inter.max << "]";
 	return out;
@@ -91,29 +90,25 @@ struct Rectangle{
 	}
 };
 
-//cout overload to print Rectangle structure
 ostream& operator<<(ostream& out, Rectangle &rec){
 	out << rec.x << " x " << rec.y;
 	return out;
 }
 
 class BSP{
-
 	private:
-
-		BSPNode* root;
+		
 		float precision;
 
 		void partition_x(BSPNode* &t); //checked
 		void partition_y(BSPNode* &t); //checked
 
-		//Partition when starting with x
+
 		void partition_helper_4x(BSPNode* &t); //checked
 		void partition_helper_left_4x(BSPNode* &t); //checked
 		void partition_helper_right_4x(BSPNode* &t); //checked
 		void partition_4x(BSPNode* &t); //checked
 
-		//Partition when starting with y
 		void partition_helper_4y(BSPNode* &t); //checked
 		void partition_helper_left_4y(BSPNode* &t); //checked
 		void partition_helper_right_4y(BSPNode* &t); //checked
@@ -126,14 +121,14 @@ class BSP{
 		BSPNode* find_point(BSPNode* t, Point &p); //checked
 		BSPNode* find_point_x(BSPNode* t, Point &p);//checked
 		BSPNode* find_point_y(BSPNode* t, Point &p);//checked
+
+		BSPNode* insert_node(BSPNode* &t, BSPNode* parent);
 	
 		int height(BSPNode* t) const; //checked
 		int size(BSPNode* t) const; //checked
-
 		void destroy_recursive(BSPNode* &t);
 		pair<vector<Point>, vector<Point>> def_points_x(BSPNode* &t); //checked
 		pair<vector<Point>, vector<Point>> def_points_y(BSPNode* &t); //checked
-
 		void display_node(BSPNode *t, int count); //checked
 		float covered_length_x(BSPNode* &t); //checked
 		float covered_length_y(BSPNode* &t); //checked
@@ -145,9 +140,9 @@ class BSP{
 		BSPNode* find_node_y_2insert(BSPNode* &t, Point &p);//checked
 		BSPNode* find_node_2insert(BSPNode* &t, Point &p);//checked
 		void insert_point_helper(BSPNode* &t, int do_partitions);//checked
-	
 	public:
-
+		BSPNode* root;
+		
 		BSP(); //checked
 		BSP(Region region, vector<Point> points, float prec); //checked
 		~BSP(); 
@@ -155,11 +150,10 @@ class BSP{
 		int height() const; //checked
 		int size() const; //checked
 		
-		
 		void remove_point(Point &p); //checked
-		void insert_point(Point &p); //checked
+		void insert_point(Point &p);
 
-		vector<Point> scan_region( Interval x, Interval y); //checked
+		vector<Point> scan_region( Interval x, Interval y); //half checked
 		Rectangle find_point_region(Point &p);//checked
 		void display(); //checked
 

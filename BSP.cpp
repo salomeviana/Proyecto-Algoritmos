@@ -445,35 +445,45 @@ bool BSP::right_son(BSPNode* &t){
 	return !left_son(t);
 }
 
-
 void BSP::remove_point(Point &p){
-	cout << "Removing " << p << endl;
-
 	BSPNode* p_node = find_point(root, p);
-	if (p_node != nullptr){ //checks if the point is in the tree
+	if (p_node != nullptr){//checks if the point is in the tree
 		while (p_node != nullptr){ //removes point from every list in the tree
 			int idx = -1;
 			for (unsigned i = 0; i<p_node->p_list.size(); i++){
-				if (p == p_node->p_list[i]){
-					idx = i; //gets index of Point to erase
+				if (p == p_node->p_list[i]){ //gets index of Point to erase
+					idx = i;
 					break;
 				}
 			}
-
-			if (idx != -1)
+	
+			if (idx != -1){
 				p_node->p_list.erase(p_node->p_list.begin() + idx);	
+			}
+			
 
 			BSPNode* par = p_node->parent;
+	
 
 			if (p_node->p_list.empty()){
+
+				if(p_node->parent == nullptr && p_node->left ==nullptr && p_node->right == nullptr){
+					delete p_node;
+				}
+
+				else{
+	
 				if(left_son(p_node)){
 					p_node->parent->left = nullptr;
 					delete p_node;
 				}
-				else{
+
+				else if(right_son(p_node)){
 					p_node->parent->right = nullptr;
 					delete p_node;
+					}
 				}
+	
 			}
 
 			p_node = par;
@@ -482,7 +492,6 @@ void BSP::remove_point(Point &p){
 	else{
 		throw runtime_error("Attempting to remove unexisting Point\n");
 	}
-//}
 }
 
 vector<Point> BSP::scan_region(Interval x, Interval y, BSPNode* &t){
@@ -537,14 +546,14 @@ void BSP::scan_region_helper(Rectangle rec_reference, BSPNode* &t, vector<Point>
 }
 
 void BSP::insert_point(Point &p){
-	cout << "Inserting " << p << endl;
-	if(root == nullptr){
+	cout << "Inserting " << p << endl;  
+	if (root == nullptr){
 		BSPNode* new_root = new BSPNode;
 
-		new_root -> parent = nullptr;
-		new_root -> left = nullptr;
-		new_root -> right = nullptr;
-		new_root -> type = 0;
+		new_root-> parent = nullptr;
+		new_root-> left = nullptr;
+		new_root-> right = nullptr;
+		new_root-> type = 0;
 
 		new_root->p_list = {p};
 
@@ -554,16 +563,17 @@ void BSP::insert_point(Point &p){
 
 	else{
 		BSPNode* p_node = find_point(root, p);
+
 		if (root->left == nullptr && root->right == nullptr){
 			root->p_list.push_back(p);
 			partition_4x(root);
 		}
 
-	
-		else if (p_node == nullptr){ //if point is not in the tree
+
+		else if (p_node == nullptr){
 			root->p_list.push_back(p);
-			BSPNode* node = find_node_2insert(root, p); // node where to insert the point
-			if (node->left != nullptr && node->right == nullptr){ //creating node in the right to create partition for the point
+			BSPNode* node = find_node_2insert(root, p);
+			if (node->left != nullptr && node->right == nullptr){
 				BSPNode* new_node = new BSPNode;
 
 				new_node->reg.p_reference.x = node->reg.p_reference.x + node->reg.len_x/2;
@@ -584,34 +594,37 @@ void BSP::insert_point(Point &p){
 				new_node->parent = node;
 
 				new_node->left = nullptr;
-				new_node->left = nullptr;
+				new_node->right = nullptr;
 
 				new_node->p_list.push_back(p);
 
 				if (covered_length_y(new_node) > precision){
 					partition_y(new_node);
 					if (node->type == 1 || node->type == 0){
-							
-							//if (new_node->left != nullptr){
+							if (new_node->left != nullptr){
 								if (covered_length_x(new_node->right) > precision && covered_length_y(new_node->right) > precision){
 									partition_4x(new_node);
-									partition_helper_4x(new_node);
+									partition_helper_4x(new_node); // 
 								}
-							//}
+							}
 
-							/*if (new_node->right != nullptr){
+							if (new_node->right != nullptr){
 								if (covered_length_x(new_node->right) > precision && covered_length_y(new_node->right) > precision){
 									partition_x(new_node->right);
 									partition_helper_4x(new_node->right);
 								}
-							}*/
+							}
 					}
 					else{
+						
 						if (new_node->left != nullptr){
 							if (covered_length_x(new_node->left) > precision && covered_length_y(new_node->left) > precision){
 								partition_x(new_node->left);
 								partition_helper_4x(new_node->left);
 								}
+							else{
+								//cout << "not for t->right->left" << endl;
+							}
 						}
 						
 						if (new_node->right != nullptr){
@@ -619,12 +632,15 @@ void BSP::insert_point(Point &p){
 								partition_x(new_node->right);
 								partition_helper_4x(new_node->right);
 							}
+							else{
+								
+							}
 						}
 						
 					}
 				}
 			}
-			else if (node->left == nullptr && node->right != nullptr){ //creating node in the left to create partition for the point
+			else if (node->left == nullptr && node->right != nullptr){
 				BSPNode* new_node = new BSPNode;
 				new_node->reg.p_reference = node->reg.p_reference;
 				
@@ -644,48 +660,41 @@ void BSP::insert_point(Point &p){
 				new_node->parent = node;
 
 				new_node->left = nullptr;
-				new_node->right =nullptr;
-
+				new_node->right = nullptr;
 
 				new_node->p_list.push_back(p);
 
-
 				if (covered_length_y(new_node) > precision){
-						partition_y(new_node);
-						if (node->type == 1 || node->type == 0){
-
-							//if (new_node->left != nullptr){
-								if (covered_length_x(new_node->left) > precision && covered_length_y(new_node->left) > precision){
-									//checks if the precision has been achieved
-									partition_4x(new_node);
-									partition_helper_4x(new_node);
-								}
-							//}
-
-							/*if (new_node->right != nullptr){
-								if (covered_length_x(new_node->right) > precision && covered_length_y(new_node->right) > precision){
-									//checks if the precision has been achieved
-									partition_x(new_node->right);
-									partition_helper_4x(new_node->right);
-								}
-							}*/
+					partition_y(new_node);
+					if (node->type == 1 || node->type == 0){
+						if (new_node->left != nullptr){
+							if (covered_length_x(new_node->left) > precision && covered_length_y(new_node->left) > precision){
+								partition_4x(new_node);
+								partition_helper_4x(new_node);//
+							}
 						}
-						else{
-							if (new_node->left != nullptr){
-								if (covered_length_x(new_node->left) > precision && covered_length_y(new_node->left) > precision){
-									//checks if the precision has been achieved
-									partition_x(new_node->left);
-									partition_helper_4x(new_node->left);
-								}
+						if (new_node->right != nullptr){
+							if (covered_length_x(new_node->right) > precision && covered_length_y(new_node->right) > precision){
+								partition_x(new_node->right);
+								partition_helper_4x(new_node->right);
 							}
+						}
+					}
+					else{
 
-							if (new_node->right != nullptr){
-								if (covered_length_x(new_node->right) > precision && covered_length_y(new_node->right) > precision){
-									//checks if the precision has been achieved
-									partition_x(new_node->right);
-									partition_helper_4x(new_node->right);
-								}
+						if (new_node->left != nullptr){
+							if (covered_length_x(new_node->left) > precision && covered_length_y(new_node->left) > precision){
+								partition_x(new_node->left);
+								partition_helper_4x(new_node->left);
 							}
+						}
+
+						if (new_node->right != nullptr){
+							if (covered_length_x(new_node->right) > precision && covered_length_y(new_node->right) > precision){
+								partition_x(new_node->right);
+								partition_helper_4x(new_node->right);
+							}
+						}
 					}
 				}
 			}
@@ -693,8 +702,8 @@ void BSP::insert_point(Point &p){
 		else{
 			throw runtime_error("Attempting to insert an existing Point\n");
 		}
-	}
 
+	}
 }
 
 
